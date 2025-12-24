@@ -3,12 +3,14 @@ package com.example.NAOSys.Controller;
 import com.example.NAOSys.Entity.*;
 import com.example.NAOSys.POJO.API_StandardResponse;
 import com.example.NAOSys.Service.UserService;
+import org.apache.kafka.common.protocol.types.Field;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Map;
 
@@ -72,12 +74,12 @@ public class UserController
     }
 
     @GetMapping("/getRecruiterEmail/{email}")
-    public ResponseEntity<String> viewRecruiterByEmail(@PathVariable("email") String email)
+    public ResponseEntity<Map<String, Object>> viewRecruiterByEmail(@PathVariable("email") String email)
     {
-        String validation = userService.getRecruiterByEmail(email);
+        Map<String, Object> validation = userService.getRecruiterByEmail(email);
         if(validation!=null)
         {
-            return new ResponseEntity<>(userService.getRecruiterByEmail(email), HttpStatus.OK);
+            return new ResponseEntity<>(validation, HttpStatus.OK);
         }
         else
         {
@@ -85,12 +87,17 @@ public class UserController
         }
     }
 
-    @GetMapping("/getRecruiterPhone/{phone}")
-    public ResponseEntity<Map<String, Object>> viewRecruiterByPhone(@PathVariable("phone") String phone)
+    @GetMapping(value = "/getRecruiterPhone")
+    public ResponseEntity<Map<String, Object>> viewRecruiterByPhone(@RequestHeader(name = "phone") String phone)
     {
+        if(phone.isEmpty())
+        {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Phone number cannot be empty or null!");
+        }
         Map<String, Object> validation = userService.getRecruiterByPhone(phone);
         if(!validation.isEmpty())
         {
+            log.info(validation);
             return new ResponseEntity<>(validation, HttpStatus.OK);
         }
         else

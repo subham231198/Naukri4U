@@ -149,7 +149,7 @@ public class UserService
         }
     }
 
-    public String getRecruiterByEmail(String email)
+    public Map<String, Object> getRecruiterByEmail(String email)
     {
         if(Validator.validateEmail(email, "Recruiter"))
         {
@@ -162,17 +162,15 @@ public class UserService
                 {
                     if(getUser.get().getRole().equalsIgnoreCase("Recruiter"))
                     {
-                        StringBuilder sb = new StringBuilder();
-                        sb.append("|").append("Recruiter ID: ").append(getRec.get().getUser().getUser_id());
-                        sb.append("|").append("Name: ").append(getRec.get().getUser().getFirstName());
-                        sb.append(" ").append(getRec.get().getUser().getLastName());
-                        sb.append("|").append("Email: ").append(getRec.get().getUser().getEmail());
-                        sb.append("|").append("Phone: +91-").append(getRec.get().getUser().getPhone());
-                        sb.append("|").append("Company: ").append(getRec.get().getCompany());
-                        sb.append("|").append("Designation: ").append(getRec.get().getDesignation());
-                        sb.append("\n");
-
-                        return sb.toString();
+                        String name = getRec.get().getUser().getFirstName()+" "+getRec.get().getUser().getLastName();
+                        return Map.of(
+                                "id", getRec.get().getUser().getUser_id(),
+                                "name", name,
+                                "email", getRec.get().getUser().getEmail(),
+                                "phone", getRec.get().getUser().getPhone(),
+                                "company", getRec.get().getCompany(),
+                                "designation", getRec.get().getDesignation()
+                        );
                     }
                     else
                     {
@@ -182,10 +180,10 @@ public class UserService
             }
             else
             {
-                return "No record available with the provided email "+email;
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "No record available with the provided email "+email);
             }
         }
-        return "Invalid email address. Please check your email and try again!";
+        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email address. Please check your email and try again!");
     }
 
     public Map<String, Object> getRecruiterByPhone(String phone)
@@ -199,14 +197,14 @@ public class UserService
                 Optional<Recruiter> getRec = recruiterRepo.findById(user_id);
                 if (getRec.isPresent())
                 {
-                    String name = getRec.get().getUser().getFirstName()+""+getRec.get().getUser().getLastName();
+                    String name = getRec.get().getUser().getFirstName()+" "+getRec.get().getUser().getLastName();
                     return Map.of(
-                            "Recruiter ID: ", getRec.get().getUser().getUser_id(),
-                            "Name: ", name,
-                            "Email: ", getRec.get().getUser().getEmail(),
-                            "Phone: +91-", getRec.get().getUser().getPhone(),
-                            "Company: ", getRec.get().getCompany(),
-                            "Designation: ", getRec.get().getDesignation()
+                            "id", getRec.get().getUser().getUser_id(),
+                            "name", name,
+                            "email", getRec.get().getUser().getEmail(),
+                            "phone", getRec.get().getUser().getPhone(),
+                            "company", getRec.get().getCompany(),
+                            "designation", getRec.get().getDesignation()
                     );
                 }
             }
