@@ -46,7 +46,7 @@ public class UserController
     @PostMapping("/addCandidate")
     public ResponseEntity<API_StandardResponse<?>> registerCandidate(@RequestBody CandidateRegistration candidate)
     {
-        String validation = userService.addCandidate(candidate.getUser(), candidate.getCandidate());
+        Boolean validation = userService.addCandidate(candidate.getUser(), candidate.getCandidate());
         if(validation != null)
         {
             apiStandardResponse.setCode(null);
@@ -116,12 +116,12 @@ public class UserController
     }
 
     @GetMapping("/getAllCandidate")
-    public ResponseEntity<String> viewAllCandidate()
+    public ResponseEntity<List<Map<String, Object>>> viewAllCandidate()
     {
-        String validation = userService.getAllCandidate();
+        List<Map<String, Object>> validation = userService.getAllCandidate();
         if(validation != null)
         {
-            return new ResponseEntity<>(userService.getAllCandidate(), HttpStatus.OK);
+            return new ResponseEntity<>(validation, HttpStatus.OK);
         }
         else
         {

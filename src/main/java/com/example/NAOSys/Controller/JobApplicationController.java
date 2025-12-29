@@ -2,10 +2,13 @@ package com.example.NAOSys.Controller;
 
 import com.example.NAOSys.Entity.JobApplication;
 import com.example.NAOSys.Service.JobAppService;
+import org.apache.kafka.common.protocol.types.Field;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 @RestController
 @RequestMapping("/Naukri4U")
@@ -15,12 +18,12 @@ public class JobApplicationController
     JobAppService jobAppService;
 
     @PostMapping("/JobDescription/{job_id}/Candidate/{cid}/Apply")
-    public ResponseEntity<String> apply(@PathVariable("job_id") Long job_id, @PathVariable("cid") Long candidate_id, JobApplication jobApplication)
+    public ResponseEntity<Map<String, Object>> apply(@PathVariable("job_id") Long job_id, @PathVariable("cid") Long candidate_id, JobApplication jobApplication)
     {
-        String validataion = jobAppService.applyToJob(job_id, candidate_id, jobApplication);
+        Map<String, Object> validataion = jobAppService.applyToJob(job_id, candidate_id, jobApplication);
         if(validataion!=null)
         {
-            return new ResponseEntity<>("Successfully applied to jod id "+job_id, HttpStatus.CREATED);
+            return new ResponseEntity<>(validataion, HttpStatus.CREATED);
         }
         else
         {
@@ -29,12 +32,12 @@ public class JobApplicationController
     }
 
     @DeleteMapping("/JobDescription/{job_id}/Candidate/{cid}/Withdraw")
-    public ResponseEntity<String> withdraw(@PathVariable("job_id") Long job_id, @PathVariable("cid") Long candidate_id)
+    public ResponseEntity<Map<String, Object>> withdraw(@PathVariable("job_id") Long job_id, @PathVariable("cid") Long candidate_id)
     {
-        String validataion = jobAppService.withdrawApplication(job_id, candidate_id);
+        Map<String, Object> validataion = jobAppService.withdrawApplication(job_id, candidate_id);
         if(validataion!=null)
         {
-            return new ResponseEntity<>(jobAppService.withdrawApplication(job_id, candidate_id), HttpStatus.NO_CONTENT);
+            return new ResponseEntity<>(validataion, HttpStatus.NO_CONTENT);
         }
         else
         {

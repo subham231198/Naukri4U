@@ -78,17 +78,17 @@ public class UserService
         }
     }
 
-    public String addCandidate(User user, Candidate candidate)
+    public Boolean addCandidate(User user, Candidate candidate)
     {
         Optional<User> validateEmailExists = userRepo.findByEmail(user.getEmail());
         Optional<User> validatePhoneExists = userRepo.findByPhone(user.getPhone());
         if(validateEmailExists.isPresent())
         {
-            return "Candidate profile already exists with the provided email address "+user.getEmail();
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Candidate profile already exists with the provided email address "+user.getEmail());
         }
         else if(validatePhoneExists.isPresent())
         {
-            return "Candidate profile already exists with the provided phone number "+user.getPhone();
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Candidate profile already exists with the provided phone number "+user.getPhone());
         }
         else
         {
@@ -103,21 +103,21 @@ public class UserService
                         candidate.setUser(user);
                         userRepo.save(user);
                         candidateRepo.save(candidate);
-                        return "Candidate has been added successfully";
+                        return true;
                     }
                     else
                     {
-                        return "Invalid pincode!";
+                        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid pincode!");
                     }
                 }
                 else
                 {
-                    return "Invalid phone number";
+                    throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid phone number");
                 }
             }
             else
             {
-                return "Invalid email address";
+                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email address");
             }
         }
     }
@@ -134,7 +134,7 @@ public class UserService
             {
                 Map<String, Object> map = new LinkedHashMap<>();
                 String name = getAllRec.get(j).getUser().getFirstName()+" "+getAllRec.get(j).getUser().getLastName();
-                map.put("id", getAllRec.get(j).getUser().getUser_id());
+                map.put("id", getAllRec.get(j).getUser().getUserId());
                 map.put("name", name);
                 map.put("email", getAllRec.get(j).getUser().getEmail());
                 map.put("phone", getAllRec.get(j).getUser().getPhone());
@@ -150,103 +150,117 @@ public class UserService
         }
     }
 
-    public Map<String, Object> getRecruiterByEmail(String email)
-    {
-        if(Validator.validateEmail(email, "Recruiter"))
-        {
-            Optional<User> getUser = userRepo.findByEmail(email);
-            if(getUser.isPresent())
-            {
-                Long user_id = getUser.get().getUser_id();
-                Optional<Recruiter> getRec = recruiterRepo.findById(user_id);
-                if (getRec.isPresent())
-                {
-                    if(getUser.get().getRole().equalsIgnoreCase("Recruiter"))
-                    {
-                        String name = getRec.get().getUser().getFirstName()+" "+getRec.get().getUser().getLastName();
-                        return Map.of(
-                                "id", getRec.get().getUser().getUser_id(),
-                                "name", name,
-                                "email", getRec.get().getUser().getEmail(),
-                                "phone", getRec.get().getUser().getPhone(),
-                                "company", getRec.get().getCompany(),
-                                "designation", getRec.get().getDesignation()
-                        );
-                    }
-                    else
-                    {
-                        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No record available with the provided email "+email);
-                    }
-                }
-            }
-            else
-            {
-                throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "No record available with the provided email "+email);
-            }
+    public Map<String, Object> getRecruiterByEmail(String email) {
+
+        if (!Validator.validateEmail(email, "Recruiter")) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Invalid email address. Please check your email and try again!"
+            );
         }
-        throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email address. Please check your email and try again!");
+
+        User user = userRepo.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "No user found with email: " + email
+                ));
+
+        if (!"Recruiter".equalsIgnoreCase(user.getRole())) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "User is not a recruiter"
+            );
+        }
+
+        Recruiter recruiter = recruiterRepo.findByUser_UserId(user.getUserId())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Recruiter profile not found for email: " + email
+                ));
+
+        String name = user.getFirstName() + " " + user.getLastName();
+
+        return Map.of(
+                "id", user.getUserId(),
+                "name", name,
+                "email", user.getEmail(),
+                "phone", user.getPhone(),
+                "company", recruiter.getCompany(),
+                "designation", recruiter.getDesignation()
+        );
     }
 
-    public Map<String, Object> getRecruiterByPhone(String phone)
-    {
-        if(Validator.validatePhone(phone))
-        {
-            Optional<User> getUser = userRepo.findByPhone(phone);
-            if(getUser.isPresent())
-            {
-                Long user_id = getUser.get().getUser_id();
-                Optional<Recruiter> getRec = recruiterRepo.findById(user_id);
-                if (getRec.isPresent())
-                {
-                    String name = getRec.get().getUser().getFirstName()+" "+getRec.get().getUser().getLastName();
-                    return Map.of(
-                            "id", getRec.get().getUser().getUser_id(),
-                            "name", name,
-                            "email", getRec.get().getUser().getEmail(),
-                            "phone", getRec.get().getUser().getPhone(),
-                            "company", getRec.get().getCompany(),
-                            "designation", getRec.get().getDesignation()
-                    );
-                }
-            }
-            else
-            {
-                log.error("No record available with the provided phone number +91-"+phone);
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No record available with the provided phone number +91-"+phone);
-            }
+
+    public Map<String, Object> getRecruiterByPhone(String phone) {
+
+        if (!Validator.validatePhone(phone)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Invalid phone number. Please check your phone number and try again!"
+            );
         }
-        else
-        {
-            log.error("Invalid phone number. Please check your phone number and try again!");
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid phone number. Please check your phone number and try again!");
+
+        User user = userRepo.findByPhone(phone)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "No user found with phone number: +91-" + phone
+                ));
+
+        if (!"Recruiter".equalsIgnoreCase(user.getRole())) {
+            throw new ResponseStatusException(
+                    HttpStatus.FORBIDDEN,
+                    "User is not a recruiter"
+            );
         }
-        return Map.of();
+
+        Recruiter recruiter = recruiterRepo.findByUser_UserId(user.getUserId())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Recruiter profile not found for phone number: +91-" + phone
+                ));
+
+        String name = user.getFirstName() + " " + user.getLastName();
+
+        return Map.of(
+                "id", user.getUserId(),
+                "name", name,
+                "email", user.getEmail(),
+                "phone", user.getPhone(),
+                "company", recruiter.getCompany(),
+                "designation", recruiter.getDesignation()
+        );
     }
-    public String getAllCandidate()
+
+
+    public List<Map<String, Object>> getAllCandidate()
     {
         List<Candidate> getAllCandidate = candidateRepo.findAll();
+        List<Map<String, Object>> result = new ArrayList<>();
         if(getAllCandidate.size()>0)
         {
             StringBuilder sb = new StringBuilder();
             for(int i = 0; i < getAllCandidate.size(); i++)
             {
-                sb.append("|").append("CID: ").append(getAllCandidate.get(i).getCID());
-                sb.append("|").append("Name: ").append(getAllCandidate.get(i).getUser().getFirstName());
-                sb.append(" ").append(getAllCandidate.get(i).getUser().getLastName());
-                sb.append("|").append("Email: ").append(getAllCandidate.get(i).getUser().getEmail());
-                sb.append("|").append("Phone: +91-").append(getAllCandidate.get(i).getUser().getPhone());
-                sb.append("|").append("Current Company: ").append(getAllCandidate.get(i).getCurrentCompany());
-                sb.append("|").append("Total years of experience: ").append(getAllCandidate.get(i).getTotalYearsOfExperience());
-                sb.append("|").append("Relevant years of experience: ").append(getAllCandidate.get(i).getRelevantYearsOfExperience());
-                sb.append("|").append("Primary Skill").append(getAllCandidate.get(i).getPrimarySkill());
-                sb.append("|").append("Secondary Skill: ").append(getAllCandidate.get(i).getSecondarySkill());
-                sb.append("\n");
+
+                Map<String, Object> map = new LinkedHashMap<>();
+                String name = getAllCandidate.get(i).getUser().getFirstName()+" "+getAllCandidate.get(i).getUser().getLastName();
+                map.put("cid", getAllCandidate.get(i).getUser().getUserId());
+                map.put("name", name);
+                map.put("email", getAllCandidate.get(i).getUser().getEmail());
+                map.put("phone", getAllCandidate.get(i).getUser().getPhone());
+                map.put("company", getAllCandidate.get(i).getCurrentCompany());
+                map.put("yoe", getAllCandidate.get(i).getTotalYearsOfExperience());
+                map.put("skill1", getAllCandidate.get(i).getPrimarySkill());
+                map.put("skill2", getAllCandidate.get(i).getSecondarySkill());
+                result.add(map);
+
+
             }
-            return sb.toString();
+            return result;
         }
         else
         {
-            return "No candidate record available in database.";
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No candidate record available in database.");
         }
     }
 }
