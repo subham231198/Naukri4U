@@ -9,6 +9,7 @@ import com.example.NAOSys.Repository.CandidateRepo;
 import com.example.NAOSys.Repository.RecruiterRepo;
 import com.example.NAOSys.Repository.UserRepo;
 import jakarta.transaction.Transactional;
+import org.apache.kafka.common.protocol.types.Field;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,9 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @Service
 @Transactional
@@ -123,29 +122,31 @@ public class UserService
         }
     }
 
-    public String getAllRecruiter()
+    public List<Map<String, Object>> getAllRecruiter()
     {
         List<User> getAllUser = userRepo.findAll();
         List<Recruiter> getAllRec = recruiterRepo.findAll();
+        List<Map<String, Object>> result = new LinkedList<>();
+
         if(getAllUser.size()>0 && getAllRec.size()>0)
         {
-            StringBuilder sb = new StringBuilder();
             for(int j = 0; j<getAllRec.size(); j++)
             {
-                sb.append("|").append("Recruiter ID: ").append(getAllRec.get(j).getUser().getUser_id());
-                sb.append("|").append("Name: ").append(getAllRec.get(j).getUser().getFirstName());
-                sb.append(" ").append(getAllRec.get(j).getUser().getLastName());
-                sb.append("|").append("Email: ").append(getAllRec.get(j).getUser().getEmail());
-                sb.append("|").append("Phone: +91-").append(getAllRec.get(j).getUser().getPhone());
-                sb.append("|").append("Company: ").append(getAllRec.get(j).getCompany());
-                sb.append("|").append("Designation: ").append(getAllRec.get(j).getDesignation());
-                sb.append("\n");
+                Map<String, Object> map = new LinkedHashMap<>();
+                String name = getAllRec.get(j).getUser().getFirstName()+" "+getAllRec.get(j).getUser().getLastName();
+                map.put("id", getAllRec.get(j).getUser().getUser_id());
+                map.put("name", name);
+                map.put("email", getAllRec.get(j).getUser().getEmail());
+                map.put("phone", getAllRec.get(j).getUser().getPhone());
+                map.put("company", getAllRec.get(j).getCompany());
+                map.put("designation", getAllRec.get(j).getDesignation());
+                result.add(map);
             }
-            return sb.toString();
+            return result;
         }
         else
         {
-            return "No recruiter record available in database";
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No recruiter record available in database");
         }
     }
 

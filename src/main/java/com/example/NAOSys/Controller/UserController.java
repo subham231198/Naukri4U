@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -60,12 +61,12 @@ public class UserController
     }
 
     @GetMapping("/getAllRecruiter")
-    public ResponseEntity<String> viewAllRecruiter()
+    public ResponseEntity<List<Map<String, Object>>> viewAllRecruiter()
     {
-        String validation = userService.getAllRecruiter();
+        List<Map<String, Object>> validation = userService.getAllRecruiter();
         if(validation != null)
         {
-            return new ResponseEntity<>(userService.getAllRecruiter(), HttpStatus.OK);
+            return new ResponseEntity<>(validation, HttpStatus.OK);
         }
         else
         {
@@ -88,11 +89,19 @@ public class UserController
     }
 
     @GetMapping(value = "/getRecruiterPhone")
-    public ResponseEntity<Map<String, Object>> viewRecruiterByPhone(@RequestHeader(name = "phone") String phone)
+    public ResponseEntity<Map<String, Object>> viewRecruiterByPhone(@RequestHeader(name = "x-channel") String channel, @RequestHeader(name = "x-phone") String phone)
     {
         if(phone.isEmpty())
         {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Phone number cannot be empty or null!");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "x-phone cannot be empty or null!");
+        }
+        if(channel.isEmpty())
+        {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "x-channel cannot be empty or null!");
+        }
+        if(!channel.equals("WEB"))
+        {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid value passed against header x-channel!");
         }
         Map<String, Object> validation = userService.getRecruiterByPhone(phone);
         if(!validation.isEmpty())
