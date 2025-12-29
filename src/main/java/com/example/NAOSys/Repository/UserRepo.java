@@ -1,6 +1,7 @@
 package com.example.NAOSys.Repository;
 
 import com.example.NAOSys.Entity.User;
+import org.apache.kafka.common.protocol.types.Field;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -11,4 +12,5 @@ public interface UserRepo extends JpaRepository<User, Long>
 {
     Optional<User> findByEmail(String email);
     Optional<User> findByPhone(String phone);
+    Optional<User> findByEmailAndPassword(String email, String password);
 }

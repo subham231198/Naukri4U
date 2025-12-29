@@ -7,6 +7,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.Map;
+
 @RestController
 @RequestMapping("/Naukri4U")
 public class JobDescriptionController
@@ -15,12 +18,12 @@ public class JobDescriptionController
     JDService jdService;
 
     @PostMapping("/addJobDescription/{REC_ID}")
-    public ResponseEntity<String> createNewJob(@RequestBody JobDescription jd, @PathVariable("REC_ID") Long rec_id)
+    public ResponseEntity<Map<String, Object>> createNewJob(@RequestBody JobDescription jd, @PathVariable("REC_ID") Long rec_id)
     {
-        String validation = jdService.addJobDescription(jd, rec_id);
+        Map<String, Object> validation = jdService.addJobDescription(jd, rec_id);
         if(validation!=null)
         {
-            return new ResponseEntity<>("Job details added successfully", HttpStatus.CREATED);
+            return new ResponseEntity<>(validation, HttpStatus.CREATED);
         }
         else
         {
@@ -29,12 +32,12 @@ public class JobDescriptionController
     }
 
     @GetMapping("/getAllJobDescriptions")
-    public ResponseEntity<String> getAllJobDescriptions()
+    public ResponseEntity<List<Map<String, Object>>> getAllJobDescriptions()
     {
-        String validation = jdService.getJobAllDescription();
+        List<Map<String, Object>> validation = jdService.getJobAllDescription();
         if(validation!=null)
         {
-            return new ResponseEntity<>(jdService.getJobAllDescription(), HttpStatus.OK);
+            return new ResponseEntity<>(validation, HttpStatus.OK);
         }
         else
         {
@@ -43,12 +46,12 @@ public class JobDescriptionController
     }
 
     @GetMapping("/getJob/{JOB_ID}")
-    public ResponseEntity<String> getJobDescriptionById(@PathVariable("JOB_ID") Long job_id)
+    public ResponseEntity<Map<String, Object>> getJobDescriptionById(@PathVariable("JOB_ID") Long job_id)
     {
-        String validation = jdService.getJobDetailsByID(job_id);
+        Map<String, Object> validation = jdService.getJobDetailsByID(job_id);
         if(validation!=null)
         {
-            return new ResponseEntity<>(jdService.getJobDetailsByID(job_id), HttpStatus.OK);
+            return new ResponseEntity<>(validation, HttpStatus.OK);
         }
         else
         {

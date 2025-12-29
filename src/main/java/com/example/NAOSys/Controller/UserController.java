@@ -2,7 +2,13 @@ package com.example.NAOSys.Controller;
 
 import com.example.NAOSys.Entity.*;
 import com.example.NAOSys.POJO.API_StandardResponse;
+import com.example.NAOSys.POJO.LogOffProvider;
+import com.example.NAOSys.POJO.UserLogOn;
+import com.example.NAOSys.Service.LogOnService;
 import com.example.NAOSys.Service.UserService;
+import com.sun.net.httpserver.HttpsServer;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import org.apache.kafka.common.protocol.types.Field;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -21,6 +27,9 @@ public class UserController
 {
     @Autowired
     UserService userService;
+
+    @Autowired
+    LogOnService logOnService;
 
     private static final Logger log = LogManager.getLogger(UserController.class);
 
@@ -126,6 +135,67 @@ public class UserController
         else
         {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+    }
+
+    @PostMapping(value = "/userLogOn")
+    public ResponseEntity<Map<String, Object>> userLogOn(@RequestBody UserLogOn userLogOn, HttpServletResponse response)
+    {
+        if(userLogOn.getEmail().isEmpty() || userLogOn.getPassword().isEmpty())
+        {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Credentials cannot be null or blank!");
+        }
+        else
+        {
+            Map<String, Object> validation = logOnService.userLogOn(userLogOn.getEmail(), userLogOn.getPassword());
+            if(validation!=null)
+            {
+                Cookie cookie = new Cookie(
+                        "SESSION_ID",
+                        validation.get("user_sessionId").toString()
+                );
+
+                cookie.setHttpOnly(true);
+                cookie.setSecure(true);
+                cookie.setPath("/");
+                cookie.setMaxAge(600);
+                response.addCookie(cookie);
+
+                return new ResponseEntity<>(validation, HttpStatus.OK);
+            }
+            else
+            {
+                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            }
+        }
+    }
+
+    @PostMapping(value = "/rest-sts/logout")
+    public ResponseEntity<Map<String, Object>> userLogOut(@RequestBody LogOffProvider logOffProvider)
+    {
+        if(!logOffProvider.getInputTokenState().getToken_type().equals("SSOTOKEN"))
+        {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid token-type in request");
+        }
+        else if(logOffProvider.getInputTokenState().getTokenId().isEmpty())
+        {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "tokenId cannot be null or blank!");
+        }
+        else if(!logOffProvider.getOutputTokenState().getSubject_confirmation().equals("Bearer"))
+        {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid value passed against subject confirmation!");
+        }
+        else
+        {
+            Map<String, Object> result = logOnService.userLogout(logOffProvider.getInputTokenState().getTokenId());
+            if(result!=null)
+            {
+                return new ResponseEntity<>(result, HttpStatus.OK);
+            }
+            else
+            {
+                return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+            }
         }
     }
 
